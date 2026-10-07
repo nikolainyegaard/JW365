@@ -201,13 +201,33 @@ public final class WebAuthnBridge {
                           .getButtonTypes()
                           .addAll(ButtonType.OK, ButtonType.CANCEL);
                     dialog.setResultConverter(button -> button == ButtonType.OK ? pinField.getText() : null);
-                    Platform.runLater(pinField::requestFocus);
+                    dialog.setOnShown(e -> {
+                        bringToFront(dialog.getDialogPane()
+                                           .getScene()
+                                           .getWindow());
+                        pinField.requestFocus();
+                    });
                     String pin = dialog.showAndWait().orElse(null);
                     answer.complete(pin == null || pin.isBlank()
                             ? Optional.empty()
                             : Optional.of(pin));
                 });
         return answer.join();
+    }
+
+    /**
+     * These windows open from a background callback rather than a click, so
+     * the window manager treats them as focus stealing and leaves them behind
+     * the sign-in window. Briefly pinning them on top gets them in front.
+     */
+    private static void bringToFront(Window window) {
+        if (!(window instanceof Stage stage)) {
+            return;
+        }
+        stage.setAlwaysOnTop(true);
+        stage.toFront();
+        stage.requestFocus();
+        Platform.runLater(() -> stage.setAlwaysOnTop(false));
     }
 
     /**
@@ -244,6 +264,7 @@ public final class WebAuthnBridge {
                     stage.setScene(scene);
                     stage.setOnCloseRequest(e -> fido2.cancel());
                     stage.show();
+                    bringToFront(stage);
                     shown.complete(stage);
                 });
         Stage stage = shown.join();
