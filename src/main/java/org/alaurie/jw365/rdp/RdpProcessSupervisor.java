@@ -272,6 +272,7 @@ public final class RdpProcessSupervisor {
             activeRdpFile = prepareRdpProfile(config.rdpFile(), config);
             RdpSessionConfig activeConfig = config.withRdpFile(activeRdpFile);
             List<String> rawCommand = buildCommandLine(freeRdp, activeConfig);
+            rawCommand.add("/t:" + resource.title());
             if (config.multiMonitor() && !freeRdp.isFlatpak()) {
                 detectMonitorSelection(freeRdp).ifPresent(selection -> rawCommand.add("/monitors:" + selection));
             }
@@ -333,6 +334,8 @@ public final class RdpProcessSupervisor {
             // Synchronize SDL presentation with vertical refresh rate and force immediate double buffering
             // to eliminate tearing, buffer swapping flickering, and presentation lag.
             env.put("SDL_RENDER_VSYNC", "1");
+            // Give the session window the JW365 window class so the desktop groups it with the app and uses its icon
+            env.put("SDL_APP_ID", "org.alaurie.jw365.gui.Jw365App");
             env.put("SDL_VIDEO_DOUBLE_BUFFER", "1");
 
             // PipeWire / PulseAudio direct native socket path
